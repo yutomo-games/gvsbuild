@@ -28,30 +28,40 @@ from .utils.base_builders import Meson
 from .utils.base_builders import MercurialCmakeProject
 
 @project_add
-class Project_libsigplusplus(Tarball, Project):
+class Project_libsigplusplus(Tarball, Meson):
     def __init__(self):
         Project.__init__(self,
             'libsig++',
             archive_url = 'https://download.gnome.org/sources/libsigc++/2.10/libsigc++-2.10.0.tar.xz',
             hash = 'f843d6346260bfcb4426259e314512b99e296e8ca241d771d21ac64f28298d81',
-##            dependencies = ['librsvg'],
+            dependencies = [
+                'meson',
+                'ninja', 
+                ]
             )
 
+    def build(self):
+        Meson.build(self)
+##?        self.install(r'.\COPYING share\doc\wing')
+
+
 @project_add
-class Project_cairomm(Tarball, Project):
+class Project_cairomm(Tarball, Meson):
     def __init__(self):
         Project.__init__(self,
             'cairomm',
             archive_url = 'https://download.gnome.org/sources/cairomm/1.15/cairomm-1.15.4.tar.xz',
             hash = '4cd9fd959538953dfa606aaa7a31381e3193eebf14d814d97ef928684ee9feb5',
-            dependencies = [ 
+            dependencies = [
+                'meson',
+                'ninja', 
                 'libsig++', 
                 'cairo', 
                 ],
             )
 
 @project_add
-class Project_atkmm(Tarball, Project):
+class Project_atkmm(Tarball, Meson):
     def __init__(self):
         Project.__init__(self,
             'atkmm',
@@ -65,7 +75,7 @@ class Project_atkmm(Tarball, Project):
             )
 
 @project_add
-class Project_pangomm(Tarball, Project):
+class Project_pangomm(Tarball, Meson):
     def __init__(self):
         Project.__init__(self,
             'pangomm',
@@ -79,7 +89,7 @@ class Project_pangomm(Tarball, Project):
             )
 
 @project_add
-class Project_glib(Tarball, Project):
+class Project_glib(Tarball, Meson):
     def __init__(self):
         Project.__init__(self,
             'glibmm',
@@ -91,7 +101,7 @@ class Project_glib(Tarball, Project):
             )
 
 @project_add
-class Project_gtkmm(Tarball, Project):
+class Project_gtkmm(Tarball, Meson):
     def __init__(self):
         Project.__init__(self,
             'gtkmm',
@@ -104,7 +114,3 @@ class Project_gtkmm(Tarball, Project):
                 'pangomm', 
                 ],
             )
-
-
-
-
