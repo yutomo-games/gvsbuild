@@ -26,6 +26,8 @@ from gvsbuild.utils.simple_ui import handle_global_options
 import gvsbuild.tools
 # projects ...
 import gvsbuild.projects
+# gtmkk projects ...
+import gvsbuild.gtkmm
 # ... and groups
 import gvsbuild.groups
 
