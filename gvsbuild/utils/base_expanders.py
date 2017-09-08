@@ -142,7 +142,15 @@ class MercurialRepo(object):
         self.exec_cmd('hg pull -u', working_dir=self.build_dir)
 
 class GitRepo(object):
+    def __force_attrib(self):
+        print("Forcing attribute on", __name__)
+        if not hasattr(self, 'fetch_submodules'):
+            self.fetch_submodules = False
+        if not hasattr(self, 'tag'):
+            self.tag = None
+        
     def unpack(self):
+        self.__force_attrib()
         print_log('Cloning %s to %s' % (self.repo_url, self.build_dir))
 
         self.builder.exec_msys('git clone %s %s-tmp' % (self.repo_url, self.build_dir))
@@ -157,6 +165,7 @@ class GitRepo(object):
         print_log('Cloned %s to %s' % (self.repo_url, self.build_dir))
 
     def update_build_dir(self):
+        self.__force_attrib()
         print_log('Updating directory %s' % (self.build_dir,))
 
         # I don't like too much this, but at least we ensured it is properly cleaned up
