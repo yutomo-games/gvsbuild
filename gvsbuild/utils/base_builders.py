@@ -31,7 +31,7 @@ class Meson(Project):
     def __init__(self, name, **kwargs):
         Project.__init__(self, name, **kwargs)
 
-    def build(self, meson_params=None):
+    def build(self, meson_params=None, make_tests=False):
         # where we build, with ninja, the library
         ninja_build = self.build_dir + '-meson'
         # clean up and regenerate all
@@ -50,18 +50,36 @@ class Meson(Project):
             cmd = '%s\\python.exe %s %s %s --prefix %s %s' % (self.builder.opts.python_dir, self.builder.meson, self.build_dir, ninja_build, self.builder.gtk_dir, add_opts, )
             # build the ninja file to do everything (build the library, create the .pc file, install it, ...)
             self.exec_vs(cmd)
-        # we simply run 'ninja install' that takes care of everything, running explicity from the build dir
+
+        if make_tests:
+            # Run ninja to build all (library, ....
+            self.builder.exec_vs('ninja', working_dir=ninja_build)
+            # .. run the tests ...
+            self.builder.exec_vs('ninja test', working_dir=ninja_build)
+            # .. and finally install everything
+        # if we don't make the tests we simply run 'ninja install' that takes care of everything, running explicity from the build dir
         self.builder.exec_vs('ninja install', working_dir=ninja_build)
 
 class CmakeProject(Tarball, Project):
     def __init__(self, name, **kwargs):
         Project.__init__(self, name, **kwargs)
 
-    def build(self):
+    def build(self, cmake_params=None, use_ninja=False):
         cmake_config = 'Debug' if self.builder.opts.configuration == 'debug' else 'RelWithDebInfo'
-        self.exec_vs('cmake -G "NMake Makefiles" -DCMAKE_INSTALL_PREFIX="%(pkg_dir)s" -DGTK_DIR="%(gtk_dir)s" -DCMAKE_BUILD_TYPE=' + cmake_config)
-        self.exec_vs('nmake /nologo')
-        self.exec_vs('nmake /nologo install')
+        cmake_gen = 'Ninja' if use_ninja else 'NMake Makefiles'
+        
+        # Create the command for cmake
+        cmd = 'cmake -G "' + cmake_gen + '" -DCMAKE_INSTALL_PREFIX="%(pkg_dir)s" -DGTK_DIR="%(gtk_dir)s" -DCMAKE_BUILD_TYPE=' + cmake_config
+        if cmake_params:
+            cmd += ' ' + cmake_params 
+        # Generate the files used to build 
+        self.exec_vs(cmd)
+        # Build 
+        if use_ninja:
+            self.exec_vs('ninja install')
+        else:
+            self.exec_vs('nmake /nologo')
+            self.exec_vs('nmake /nologo install')
 
 class MercurialCmakeProject(MercurialRepo, CmakeProject):
     def __init__(self, name, **kwargs):

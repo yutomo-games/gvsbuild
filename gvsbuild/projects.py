@@ -27,7 +27,7 @@ from .utils.simple_ui import print_debug
 from .utils.utils import convert_to_msys
 from .utils.base_expanders import Tarball, GitRepo
 from .utils.base_project import Project, project_add
-from .utils.base_builders import Meson, MercurialCmakeProject
+from .utils.base_builders import Meson, MercurialCmakeProject, CmakeProject
 
 @project_add
 class Project_adwaita_icon_theme(Tarball, Project):
@@ -164,7 +164,7 @@ class Project_emeus(GitRepo, Meson):
             )
 
     def build(self):
-        Meson.build(self, meson_params='-Denable-introspection=false -Denable-gtk-doc=false')
+        Meson.build(self, meson_params='-Denable-introspection=false -Denable-gtk-doc=false', make_tests=True)
         self.install(r'.\COPYING.txt share\doc\emeus')
 
 @project_add
@@ -309,8 +309,8 @@ class Project_gdk_pixbuf(Tarball, Project):
     def __init__(self):
         Project.__init__(self,
             'gdk-pixbuf',
-            archive_url = 'http://ftp.acc.umu.se/pub/GNOME/sources/gdk-pixbuf/2.36/gdk-pixbuf-2.36.4.tar.xz',
-            hash = '0b19901c3eb0596141d2d48ddb9dac79ad1524bdf59366af58ab38fcb9ee7463',
+            archive_url = 'http://ftp.acc.umu.se/pub/GNOME/sources/gdk-pixbuf/2.36/gdk-pixbuf-2.36.7.tar.xz',
+            hash = '1b6e5eef09d98f05f383014ecd3503e25dfb03d7e5b5f5904e5a65b049a6a4d8',
             dependencies = ['glib', 'libpng'],
             )
 
@@ -319,7 +319,7 @@ class Project_gdk_pixbuf(Tarball, Project):
         if self.builder.opts.configuration == 'debug':
             configuration = 'Debug_GDI+'
 
-        self.exec_msbuild(r'build\win32\vs%(vs_ver)s\gdk-pixbuf.sln', configuration=configuration)
+        self.exec_msbuild(r'win32\vs%(vs_ver)s\gdk-pixbuf.sln', configuration=configuration)
         self.install(r'.\COPYING share\doc\gdk-pixbuf')
 
 @project_add
@@ -383,17 +383,20 @@ class Project_glib_networking(Tarball, Project):
         self.install(r'.\COPYING share\doc\glib-networking')
 
 @project_add
-class Project_glib_openssl(Tarball, Project):
+class Project_glib_openssl(Tarball, Meson):
     def __init__(self):
         Project.__init__(self,
             'glib-openssl',
-            archive_url = 'http://ftp.acc.umu.se/pub/GNOME/sources/glib-openssl/2.50/glib-openssl-2.50.2.tar.xz',
-            hash = '1a381fce3a932f66ff3d6acab40b6153f8fe4db7371834fae182aec7cc8b62ae',
-            dependencies = ['glib', 'openssl'],
+            archive_url = 'http://ftp.acc.umu.se/pub/GNOME/sources/glib-openssl/2.50/glib-openssl-2.50.3.tar.xz',
+            hash = '0211c118b86aec228d2b7d2606bba9637d5bb5d60694cc7ccb6d2920f02866bc',
+            dependencies = ['pkg-config', 'ninja', 'meson', 'glib', 'openssl'],
             )
 
     def build(self):
-        self.exec_msbuild(r'win32\vs%(vs_ver)s\glib-openssl.sln')
+        # If you want to build without certificates use
+        # params = '-Dwith-ca-certificates=no'
+        params = '-Dwith-ca-certificates=%s/bin/cert.pem' % (self.builder.gtk_dir, )
+        Meson.build(self, meson_params=params)
         self.install(r'.\COPYING share\doc\glib-openssl')
         self.install(r'.\LICENSE_EXCEPTION share\doc\glib-openssl')
 
@@ -875,21 +878,17 @@ class Project_libssh(Tarball, Project):
         self.install(r'.\COPYING share\doc\libssh')
 
 @project_add
-class Project_libssh2(Tarball, Project):
+class Project_libssh2(CmakeProject):
     def __init__(self):
         Project.__init__(self,
             'libssh2',
             archive_url = 'https://www.libssh2.org/download/libssh2-1.8.0.tar.gz',
             hash = '39f34e2f6835f4b992cafe8625073a88e5a28ba78f83e8099610a7b3af4676d4',
-            dependencies = ['cmake'],
+            dependencies = ['cmake', 'ninja', ],
             )
 
     def build(self):
-        cmake_config = 'Debug' if self.builder.opts.configuration == 'debug' else 'RelWithDebInfo'
-        self.exec_vs(r'cmake -G"NMake Makefiles" -DCMAKE_INSTALL_PREFIX="%(gtk_dir)s" -DGTK_DIR="%(pkg_dir)s" -DWITH_ZLIB=ON -DCMAKE_BUILD_TYPE=' + cmake_config)
-        self.exec_vs(r'nmake /nologo')
-        self.exec_vs(r'nmake /nologo install')
-
+        CmakeProject.build(self, cmake_params='-DWITH_ZLIB=ON', use_ninja=True)
         self.install(r'.\COPYING share\doc\libssh2')
 
 @project_add
@@ -1077,6 +1076,7 @@ class Project_openssl(Tarball, Project):
         self.install(r'.\cert.pem bin')
         self.install(r'.\openssl.cnf share')
         self.install(r'.\LICENSE share\doc\openssl\COPYING')
+        self.install(r'.\pc-files\* lib\pkgconfig')
 
 @project_add
 class Project_opus(Tarball, Project):
