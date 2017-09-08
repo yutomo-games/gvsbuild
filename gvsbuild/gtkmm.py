@@ -58,6 +58,9 @@ class Project_cairomm(Tarball, Meson):
                 'libsig++', 
                 'cairo', 
                 ],
+            patches = [
+                '001-define-mpi-msvc.patch',
+                ],
             )
 
 @project_add
@@ -89,7 +92,7 @@ class Project_pangomm(Tarball, Meson):
             )
 
 @project_add
-class Project_glib(Tarball, Meson):
+class Project_glibmm(Tarball, Meson):
     def __init__(self):
         Project.__init__(self,
             'glibmm',

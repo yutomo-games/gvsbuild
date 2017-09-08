@@ -1,0 +1,28 @@
+--- orig/examples/text/toy-text.cc   2017-04-19 12:36:44.963963200 +0200
++++ _new/examples/text/toy-text.cc      2017-08-07 09:41:44.072097300 +0200
+@@ -1,3 +1,11 @@
++/* M_PI is defined in math.h in the case of Microsoft Visual C++, and
++ * Solaris needs math.h for M_PI and floor()
++ */
++#if defined(_MSC_VER)
++#define _USE_MATH_DEFINES
++#endif
++#include <cmath>
++
+ #include <cairomm/cairomm.h>
+
+ const double HEIGHT = 200.0;
+--- orig/examples/text/user-font.cc     2017-04-19 12:36:44.963963200 +0200
++++ _new/examples/text/user-font.cc     2017-08-07 09:41:41.469390000 +0200
+@@ -1,3 +1,11 @@
++/* M_PI is defined in math.h in the case of Microsoft Visual C++, and
++ * Solaris needs math.h for M_PI and floor()
++ */
++#if defined(_MSC_VER)
++#define _USE_MATH_DEFINES
++#endif
++#include <cmath>
++
+ #include <cairomm/cairomm.h>
+ #include <iostream>
+ #include <map>
