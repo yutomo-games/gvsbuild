@@ -25,6 +25,7 @@ import shutil
 
 from .utils.simple_ui import print_debug
 from .utils.utils import convert_to_msys
+from .utils.utils import file_replace
 from .utils.base_expanders import Tarball, GitRepo
 from .utils.base_project import Project, project_add
 from .utils.base_builders import Meson, MercurialCmakeProject, CmakeProject
@@ -302,6 +303,7 @@ class Project_freetype(Tarball, Project):
         self.exec_msbuild(r'builds\windows\vc%(vs_ver)s\freetype.vcxproj')
         self.install_dir(r'.\include')
         self.install(r'.\objs\%(platform)s\freetype.lib lib')
+        self.install(r'.\pc-files\* lib\pkgconfig')
         self.install(r'.\docs\LICENSE.TXT share\doc\freetype')
 
 @project_add
@@ -630,22 +632,25 @@ class Project_leveldb(Tarball, Project):
         self.install(r'.\LICENSE share\doc\leveldb')
 
 @project_add
-class Project_libarchive(Tarball, Project):
+class Project_libarchive(Tarball, CmakeProject):
     def __init__(self):
         Project.__init__(self,
             'libarchive',
             archive_url = 'https://libarchive.org/downloads/libarchive-3.3.1.tar.gz',
             hash = '29ca5bd1624ca5a007aa57e16080262ab4379dbf8797f5c52f7ea74a3b0424e7',
-            dependencies = ['cmake', 'win-iconv', 'zlib', 'lz4', 'openssl', 'libxml2'],
+            dependencies = ['cmake', 'ninja', 'win-iconv', 'zlib', 'lz4', 'openssl', 'libxml2'],
             patches = ['0001-Do-not-try-to-compile-with-warnings-as-errors-on-deb.patch'],
             )
 
     def build(self):
-        cmake_config = 'Debug' if self.builder.opts.configuration == 'debug' else 'Release'
-        self.exec_vs(r'cmake . -G "NMake Makefiles" -DCMAKE_INSTALL_PREFIX="%(gtk_dir)s" -DCMAKE_BUILD_TYPE=' + cmake_config)
-        self.exec_vs(r'nmake /nologo')
-        self.exec_vs(r'nmake /nologo install')
-
+        CmakeProject.build(self, use_ninja=True)
+        # Fix the pkg-config .pc file, correcting the library's names 
+        file_replace(os.path.join(self.pkg_dir, 'lib', 'pkgconfig', 'libarchive.pc'), 
+                     [ (' -llz4',   ' -lliblz4'),
+                       (' -leay32', ' -llibeay32'),
+                       (' -lxml2',  ' -llibxml2'),
+                       ]
+                     )
         self.install(r'.\COPYING share\doc\libarchive')
 
 @project_add
@@ -703,37 +708,33 @@ class Project_libgxps(Tarball, Project):
     def __init__(self):
         Project.__init__(self,
             'libgxps',
-            archive_url = 'https://git.gnome.org/browse/libgxps/snapshot/libgxps-84e11c4f93829a762273b7cc362d6bc9a7582ed7.tar.xz',
-            hash = '1618845a59f665acfc1eeccee893b3cf27ff52588f90b9ba2c678630aeca5cf8',
-            dependencies = ['glib', 'libarchive', 'cairo', 'libpng', 'libjpeg-turbo'],
+            archive_url = 'http://ftp.acc.umu.se/pub/GNOME/sources/libgxps/0.3/libgxps-0.3.0.tar.xz',
+            hash = '412b1343bd31fee41f7204c47514d34c563ae34dafa4cc710897366bd6cd0fae',
+            dependencies = ['meson', 'ninja', 'pkg-config', 'glib', 'libarchive', 'cairo', 'libpng', 'libjpeg-turbo', 'libtiff-4', 'gtk3', ],
+            patches = [
+                '001-ignore-m-lib.patch',
+                ],
             )
 
     def build(self):
-        self.push_location(r'.\nmake')
-        self.exec_vs(r'nmake /nologo /f Makefile.vc CFG=%(configuration)s PREFIX="%(gtk_dir)s" LIBPNG=1 LIBJPEG=1 CAIRO_PDF=1 CAIRO_PS=1 CAIRO_SVG=1')
-        self.exec_vs(r'nmake /nologo /f Makefile.vc install CFG=%(configuration)s PREFIX="%(gtk_dir)s" LIBPNG=1 LIBJPEG=1 CAIRO_PDF=1 CAIRO_PS=1 CAIRO_SVG=1')
-        self.pop_location()
+        Meson.build(self, meson_params='-Dwith-liblcms2=false')
 
         self.install(r'.\COPYING share\doc\libgxps')
 
 @project_add
-class Project_libjpeg_turbo(Tarball, Project):
+class Project_libjpeg_turbo(Tarball, CmakeProject):
     def __init__(self):
         Project.__init__(self,
             'libjpeg-turbo',
             archive_url = 'https://sourceforge.net/projects/libjpeg-turbo/files/1.5.1/libjpeg-turbo-1.5.1.tar.gz',
             hash = '41429d3d253017433f66e3d472b8c7d998491d2f41caa7306b8d9a6f2a2c666c',
-            dependencies = ['cmake', 'nasm', ],
+            dependencies = ['cmake', 'ninja', 'nasm', ],
             )
 
     def build(self):
-        cmake_config = 'Debug' if self.builder.opts.configuration == 'debug' else 'RelWithDebInfo'
-        add_path = os.path.join(self.builder.opts.msys_dir, 'usr', 'bin')
+        CmakeProject.build(self, use_ninja=True)
 
-        self.exec_vs(r'cmake . -G "NMake Makefiles" -DCMAKE_INSTALL_PREFIX="%(gtk_dir)s" -DCMAKE_BUILD_TYPE=%(configuration)s', add_path=add_path)
-        self.exec_vs(r'nmake /nologo', add_path=add_path)
-        self.exec_vs(r'nmake /nologo install', add_path=add_path)
-
+        self.install(r'.\pc-files\* lib\pkgconfig')
         self.install(r'.\LICENSE.md share\doc\libjpeg-turbo')
 
 @project_add
@@ -779,20 +780,19 @@ class Project_libmicrohttpd(Tarball, Project):
         self.install(r'.\COPYING share\doc\libmicrohttpd')
 
 @project_add
-class Project_libpng(Tarball, Project):
+class Project_libpng(Tarball, CmakeProject):
     def __init__(self):
         Project.__init__(self,
             'libpng',
             archive_url = 'http://prdownloads.sourceforge.net/libpng/libpng-1.6.29.tar.xz',
             hash = '4245b684e8fe829ebb76186327bb37ce5a639938b219882b53d64bd3cfc5f239',
-            dependencies = ['cmake', 'zlib'],
+            dependencies = ['cmake', 'ninja', 'zlib'],
             )
 
     def build(self):
-        self.exec_vs(r'cmake . -G "NMake Makefiles" -DZLIB_ROOT="%(gtk_dir)s" -DCMAKE_INSTALL_PREFIX="%(gtk_dir)s" -DCMAKE_BUILD_TYPE=%(configuration)s')
-        self.exec_vs(r'nmake /nologo')
-        self.exec_vs(r'nmake /nologo install')
+        CmakeProject.build(self, use_ninja=True)
 
+        self.install(r'.\pc-files\* lib\pkgconfig')
         self.install('LICENSE share\doc\libpng')
 
 @project_add
@@ -830,20 +830,22 @@ class Project_sqlite(Tarball, Project):
         self.install('sqlite3.lib lib')
 
 @project_add
-class Project_libcurl(Tarball, Project):
+class Project_libcurl(Tarball, CmakeProject):
     def __init__(self):
         Project.__init__(self,
             'libcurl',
             archive_url = 'https://github.com/curl/curl/releases/download/curl-7_54_0/curl-7.54.0.tar.gz',
             hash = 'a84b635941c74e26cce69dd817489bec687eb1f230e7d1897fc5b5f108b59adf',
-            dependencies = ['cmake'],
+            dependencies = ['perl', 'cmake', 'ninja', ],
             )
 
     def build(self):
-        cmake_config = 'Debug' if self.builder.opts.configuration == 'debug' else 'RelWithDebInfo'
-        self.exec_vs(r'cmake -G "NMake Makefiles" -DCMAKE_INSTALL_PREFIX="%(gtk_dir)s" -DGTK_DIR="%(pkg_dir)s" -DCMAKE_BUILD_TYPE=' + cmake_config)
-        self.exec_vs(r'nmake /nologo')
-        self.exec_vs(r'nmake /nologo install')
+        CmakeProject.build(self, use_ninja=True)
+        # Fix the pkg-config .pc file, correcting the library's names 
+        file_replace(os.path.join(self.pkg_dir, 'lib', 'pkgconfig', 'libcurl.pc'),
+                     [ (' -lcurl', ' -llibcurl_imp'),
+                       ]
+                     )
 
         self.install(r'.\COPYING share\doc\libcurl')
 
@@ -878,7 +880,7 @@ class Project_libssh(Tarball, Project):
         self.install(r'.\COPYING share\doc\libssh')
 
 @project_add
-class Project_libssh2(CmakeProject):
+class Project_libssh2(Tarball, CmakeProject):
     def __init__(self):
         Project.__init__(self,
             'libssh2',
@@ -890,6 +892,24 @@ class Project_libssh2(CmakeProject):
     def build(self):
         CmakeProject.build(self, cmake_params='-DWITH_ZLIB=ON', use_ninja=True)
         self.install(r'.\COPYING share\doc\libssh2')
+
+@project_add
+class Project_libtiff4(Tarball, CmakeProject):
+    def __init__(self):
+        Project.__init__(self,
+            'libtiff-4',
+            archive_url = 'ftp://download.osgeo.org/libtiff/tiff-4.0.8.tar.gz',
+            hash = '59d7a5a8ccd92059913f246877db95a2918e6c04fb9d43fd74e5c3390dac2910',
+            dependencies = ['cmake', 'ninja', ],
+            patches = [
+                '001-no-absolute-pc-paths.patch',
+                ],
+            )
+
+    def build(self):
+        CmakeProject.build(self, use_ninja=True)
+
+        self.install(r'.\COPYRIGHT share\doc\tiff')
 
 @project_add
 class Project_libuv(Tarball, Project):
@@ -964,39 +984,33 @@ class Project_libxml2(Tarball, Project):
         self.install(r'.\COPYING share\doc\libxml2')
 
 @project_add
-class Project_libyuv(GitRepo, Project):
+class Project_libyuv(GitRepo, CmakeProject):
     def __init__(self):
         Project.__init__(self,
             'libyuv',
             repo_url = 'https://chromium.googlesource.com/libyuv/libyuv',
             fetch_submodules = False,
             tag = None,
-            dependencies = ['cmake'],
+            dependencies = ['cmake', 'ninja', ],
             )
 
     def build(self):
-        self.exec_vs(r'cmake . -G "NMake Makefiles" -DCMAKE_INSTALL_PREFIX="%(gtk_dir)s" -DCMAKE_BUILD_TYPE=%(configuration)s')
-        self.exec_vs(r'nmake /nologo')
-        self.exec_vs(r'nmake /nologo install')
+        CmakeProject.build(self, use_ninja=True)
 
         self.install(r'.\LICENSE share\doc\libyuv')
 
 @project_add
-class Project_libzip(Tarball, Project):
+class Project_libzip(Tarball, CmakeProject):
     def __init__(self):
         Project.__init__(self,
             'libzip',
             archive_url = 'https://nih.at/libzip/libzip-1.2.0.tar.gz',
             hash = '6cf9840e427db96ebf3936665430bab204c9ebbd0120c326459077ed9c907d9f',
-            dependencies = ['cmake', 'zlib'],
+            dependencies = ['cmake', 'ninja', 'zlib'],
             )
 
     def build(self):
-        cmake_config = 'Debug' if self.builder.opts.configuration == 'debug' else 'RelWithDebInfo'
-        self.exec_vs(r'cmake -G "NMake Makefiles" -DCMAKE_INSTALL_PREFIX="%(gtk_dir)s" -DGTK_DIR="%(pkg_dir)s" -DCMAKE_BUILD_TYPE=' + cmake_config)
-        self.exec_vs(r'nmake /nologo')
-        self.exec_vs(r'nmake /nologo install')
-
+        CmakeProject.build(self, use_ninja=True)
         self.install(r'.\LICENSE share\doc\libzip')
 
 @project_add
@@ -1020,8 +1034,8 @@ class Project_lz4(Tarball, Project):
     def __init__(self):
         Project.__init__(self,
             'lz4',
-            archive_url = 'https://github.com/lz4/lz4/archive/v1.7.5.tar.gz',
-            hash = '0190cacd63022ccb86f44fa5041dc6c3804407ad61550ca21c382827319e7e7e',
+            archive_url = 'https://github.com/lz4/lz4/archive/v1.8.0.tar.gz',
+            hash = '2ca482ea7a9bb103603108b5a7510b7592b90158c151ff50a28f1ca8389fccf6',
             )
 
     def build(self):
@@ -1177,20 +1191,21 @@ class Project_pkg_config(Tarball, Project):
         self.install(r'.\COPYING share\doc\pkg-config')
 
 @project_add
-class Project_portaudio(Tarball, Project):
+class Project_portaudio(Tarball, CmakeProject):
     def __init__(self):
         Project.__init__(self,
             'portaudio',
             archive_url = 'http://www.portaudio.com/archives/pa_stable_v190600_20161030.tgz',
-            dependencies = ['cmake'],
+            dependencies = ['cmake', 'ninja', ],
             patches = [ '0001-Do-not-add-suffice-to-the-library-name.patch',
                         '0001-Fix-MSVC-check.patch' ]
             )
 
     def build(self):
-        cmake_config = 'Debug' if self.builder.opts.configuration == 'debug' else 'Release'
-        self.exec_vs(r'cmake . -G "NMake Makefiles" -DCMAKE_INSTALL_PREFIX="%(gtk_dir)s" -DPA_DLL_LINK_WITH_STATIC_RUNTIME=off -DCMAKE_BUILD_TYPE=' + cmake_config)
-        self.exec_vs(r'nmake /nologo')
+        CmakeProject.build(self, 
+                           cmake_params='-DPA_DLL_LINK_WITH_STATIC_RUNTIME=off',
+                           use_ninja=True,
+                           do_install=False)
 
         self.install(r'portaudio.dll bin')
         self.install(r'portaudio.pdb bin')
@@ -1201,61 +1216,52 @@ class Project_portaudio(Tarball, Project):
         self.install(r'.\LICENSE.txt share\doc\portaudio')
 
 @project_add
-class Project_protobuf(Tarball, Project):
+class Project_protobuf(Tarball, CmakeProject):
     def __init__(self):
         Project.__init__(self,
             'protobuf',
             archive_url = 'https://github.com/google/protobuf/releases/download/v3.3.0/protobuf-cpp-3.3.0.tar.gz',
             hash = '5e2587dea2f9287885e3b04d3a94ed4e8b9b2d2c5dd1f0032ceef3ea1d153bd7',
-            dependencies = ['cmake', 'zlib'],
+            dependencies = ['cmake', 'zlib', 'ninja', ],
             )
 
     def build(self):
-        cmake_config = 'Debug' if self.builder.opts.configuration == 'debug' else 'Release'
         # We need to compile with STATIC_RUNTIME off since protobuf-c also compiles with it OFF
-        self.exec_vs('cmake .\cmake\ -G "NMake Makefiles" -DCMAKE_INSTALL_PREFIX="%(pkg_dir)s" -Dprotobuf_DEBUG_POSTFIX="" -Dprotobuf_BUILD_TESTS=OFF -Dprotobuf_WITH_ZLIB=ON -Dprotobuf_MSVC_STATIC_RUNTIME=OFF -DCMAKE_BUILD_TYPE=' + cmake_config)
-        self.exec_vs('nmake /nologo')
-        self.exec_vs('nmake /nologo install')
+        CmakeProject.build(self, 
+                           cmake_params=r'-Dprotobuf_DEBUG_POSTFIX="" -Dprotobuf_BUILD_TESTS=OFF -Dprotobuf_WITH_ZLIB=ON -Dprotobuf_MSVC_STATIC_RUNTIME=OFF',
+                           use_ninja=True,
+                           source_part='cmake')
 
         self.install(r'.\LICENSE share\doc\protobuf')
 
 @project_add
-class Project_protobuf_c(GitRepo, Project):
+class Project_protobuf_c(GitRepo, CmakeProject):
     def __init__(self):
         Project.__init__(self,
             'protobuf-c',
             repo_url = 'https://github.com/protobuf-c/protobuf-c',
             fetch_submodules = False,
             tag = 'a8921fe7dc2455a20114130eacc6761d1354fa2c',
-            dependencies = ['cmake', 'protobuf'],
+            dependencies = ['cmake', 'protobuf', 'ninja', ],
             )
 
     def build(self):
-        cmake_config = 'Debug' if self.builder.opts.configuration == 'debug' else 'RelWithDebInfo'
-        self.exec_vs(r'cmake .\build-cmake\ -G "NMake Makefiles" -DPROTOBUF_ROOT="%(gtk_dir)s" -DCMAKE_INSTALL_PREFIX="%(gtk_dir)s" -DCMAKE_BUILD_TYPE=' + cmake_config)
-        self.exec_vs(r'nmake /nologo')
-        self.exec_vs(r'nmake /nologo install')
+        CmakeProject.build(self, use_ninja=True, source_part='build-cmake')
 
         self.install(r'.\LICENSE share\doc\protobuf-c')
 
 @project_add
-class Project_win_iconv(Tarball, Project):
+class Project_win_iconv(Tarball, CmakeProject):
     def __init__(self):
         Project.__init__(self,
             'win-iconv',
             archive_url = 'http://dl.hexchat.net/gtk-win32/src/win-iconv-0.0.8.tar.gz',
             hash = '23adea990a8303c6e69e32a64a30171efcb1b73824a1c2da1bbf576b0ae7c520',
-            dependencies = ['cmake'],
+            dependencies = ['cmake', 'ninja', ],
             )
 
     def build(self):
-        #Remove-Item -Recurse CMakeCache.txt, CMakeFiles -ErrorAction Ignore
-
-        self.exec_vs('cmake -G "NMake Makefiles" -DCMAKE_INSTALL_PREFIX="%(pkg_dir)s" -DCMAKE_BUILD_TYPE=%(configuration)s')
-        #Exec nmake clean
-        self.exec_vs('nmake /nologo')
-        self.exec_vs('nmake /nologo install')
-        #Exec nmake clean
+        CmakeProject.build(self, use_ninja=True, cmake_params='-DBUILD_TEST=1', make_tests=True)
 
         self.install(r'.\COPYING share\doc\win-iconv')
 
@@ -1314,8 +1320,77 @@ class Project_zlib(Tarball, Project):
         self.install(r'.\zlib1.dll .\zlib1.pdb bin')
         self.install(r'.\zlib1.lib lib')
 
+        self.install(r'.\pc-files\* lib\pkgconfig')
         self.install(r'.\README share\doc\zlib')
 
-Project.add(MercurialCmakeProject('pycairo', repo_url='git+ssh://git@github.com:muntyan/pycairo-gtk-win32.git', dependencies = ['cmake', 'cairo']))
-Project.add(MercurialCmakeProject('pygobject', repo_url='git+ssh://git@github.com:muntyan/pygobject-gtk-win32.git', dependencies = ['cmake', 'glib']))
-Project.add(MercurialCmakeProject('pygtk', repo_url='git+ssh://git@github.com:muntyan/pygtk-gtk-win32.git', dependencies = ['cmake', 'gtk', 'pycairo', 'pygobject']))
+@project_add
+class Project_pycairo(GitRepo, CmakeProject):
+    def __init__(self):
+        GitRepo.__init__(self)
+        Project.__init__(self,
+                         'pycairo',
+                         repo_url='git://github.com/muntyan/pycairo-gtk-win32.git',
+                         fetch_submodules = False,
+                         tag = None,
+                         dependencies = ['cmake', 'cairo'],
+                         )
+        
+@project_add
+class Project_pygobject(GitRepo, CmakeProject):
+    def __init__(self):
+        GitRepo.__init__(self)
+        Project.__init__(self,
+                         'pygobject',
+                         repo_url='git://github.com/muntyan/pygobject-gtk-win32.git',
+                         fetch_submodules = False,
+                         tag = None,
+                         dependencies = ['cmake', 'glib'],
+                         )
+
+@project_add
+class Project_pygtk(GitRepo, CmakeProject):
+    def __init__(self):
+        GitRepo.__init__(self)
+        Project.__init__(self,
+                         'pygtk',
+                         repo_url='git://github.com/muntyan/pygtk-gtk-win32.git',
+                         fetch_submodules = False,
+                         tag = None,
+                         dependencies = ['cmake', 'gtk', 'pycairo', 'pygobject'],
+                         )
+
+@project_add
+class Project_check_libs(Meson):
+    def __init__(self):
+        Project.__init__(self,
+            'check-libs',
+            dependencies = [
+                    # Used to build the various tests
+                    'meson',
+                    'ninja',
+                    'pkg-config',
+                    # libraries to test, hopefully all the one we build!
+                    'atk',
+                    'freetype',
+                    'libarchive',
+                    'libcurl',
+                    'libjpeg-turbo',
+                    'libpng',
+                    'libtiff-4',
+                    'zlib',
+
+                ],
+            )
+
+    def update_build_dir(self):
+        # Force the copy of the files in the script
+        return True
+
+    def unpack(self):
+        # Everything is in our script, nothing to download
+        pass
+
+    def build(self):
+        Meson.build(self, make_tests=True)
+        self.install(r'.\COPYING share\doc\check-libs')
+

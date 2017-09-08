@@ -4,9 +4,9 @@ exec_prefix=C:/dir_placeholder
 libdir=${prefix}/lib
 includedir=${prefix}/include
 
-Name: openssl
-Description: Cryptography and SSL/TLS Toolkit
-Version: 1.0.2l
+Name: libjpeg-turbo
+Description: check_all
+Version: 1.5.1
 
-Libs: -L${libdir} -llibeay32 -lssleay32
-Cflags: -I${includedir}/openssl
+Libs: -L${libdir} -lturbojpeg
+Cflags: -I${includedir}

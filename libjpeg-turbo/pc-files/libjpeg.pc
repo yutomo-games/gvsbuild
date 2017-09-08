@@ -4,9 +4,9 @@ exec_prefix=C:/dir_placeholder
 libdir=${prefix}/lib
 includedir=${prefix}/include
 
-Name: openssl
-Description: Cryptography and SSL/TLS Toolkit
-Version: 1.0.2l
+Name: libjpeg
+Description: Loads and saves JPG files
+Version: 6.2
 
-Libs: -L${libdir} -llibeay32 -lssleay32
-Cflags: -I${includedir}/openssl
+Libs: -L${libdir} -ljpeg
+Cflags: -I${includedir}

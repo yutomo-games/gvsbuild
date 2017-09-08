@@ -4,9 +4,9 @@ exec_prefix=C:/dir_placeholder
 libdir=${prefix}/lib
 includedir=${prefix}/include
 
-Name: openssl
-Description: Cryptography and SSL/TLS Toolkit
-Version: 1.0.2l
+Name: freetype 2
+Description: A free, high-quality, and portable font engine.
+Version: 2.7.1
 
-Libs: -L${libdir} -llibeay32 -lssleay32
-Cflags: -I${includedir}/openssl
+Libs: -L${libdir} -lfreetype
+Cflags: -I${includedir}

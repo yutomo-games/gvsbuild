@@ -49,6 +49,10 @@ def get_options(args):
     opts.no_deps = args.no_deps
     opts.check_hash = args.check_hash
     opts.skip = args.skip
+    opts.make_zip = args.make_zip
+
+    if opts.make_zip and opts.no_deps:
+        error_exit('Options --make-zip and --no-deps are not compatible')
 
     if not opts.archives_download_dir:
         opts.archives_download_dir = os.path.join(args.build_dir, 'src')
@@ -57,7 +61,10 @@ def get_options(args):
     if not opts.tools_root_dir:
         opts.tools_root_dir = os.path.join(args.build_dir, 'tools')
     if not opts.vs_install_path:
-        opts.vs_install_path = r'C:\Program Files (x86)\Microsoft Visual Studio %s.0' % (opts.vs_ver,)
+        if opts.vs_ver == "15":
+            opts.vs_install_path = r'C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional'
+        else:
+            opts.vs_install_path = r'C:\Program Files (x86)\Microsoft Visual Studio %s.0' % (opts.vs_ver,)
 
     opts.projects = args.project
 
@@ -129,7 +136,7 @@ Examples:
         Build glib only.
 
     build.py build --skip gtk,pycairo,pygobject,pygtk all
-        Build everything except gtk, pycairo
+        Build everything except gtk, pycairo, pygobject & pygtk
     """)
 
     #==============================================================================
@@ -184,7 +191,13 @@ Examples:
                          help='Command line options to pass to msbuild.')
 
     p_build.add_argument('--skip', default='',
-                         help='A comma separated list of project(s) not to builded.')
+                         help='A comma separated list of project(s) not to build.')
+
+    p_build.add_argument('--make-zip', default=False, action='store_true',
+                         help="Create singles zips of the projects built under $(build-dir)\\dist\\vsXXXX\\[platform]\\[configuration], " +
+                         "for example 'c:\\gtk-build\\dist\\vs2015\\win32\\release'. " +
+                         "NOTE: the destination dir (e.g. 'c:\\gtk-build\\gtk\\win32\\release') " +
+                         "will be cleared completely before the build!")
 
     p_build.add_argument('project', nargs='+',
                          help='Project(s) to build.')
