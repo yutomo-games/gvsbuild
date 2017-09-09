@@ -4,12 +4,10 @@ project('cairomm', 'cpp',
         default_options: [
           'buildtype=debug',
           'warning_level=1',
-#          'c_std=c99',
         ],
-        meson_version : '>= 0.40.1')
+        meson_version : '>= 0.42')
 
 cc = meson.get_compiler('cpp')
-##host_system = host_machine.system()
 
 version = meson.project_version().split('.')
 cairomm_major_version = version[0].to_int()
@@ -84,67 +82,12 @@ foreach cflag: test_cflags
   endif
 endforeach
 
-
-test_cflags = []
-
-if false
-        # Symbol visibility
-        if get_option('default_library') != 'static'
-          if host_system == 'windows'
-            cairomm_conf.set('DLL_EXPORT', true)
-            cairomm_conf.set('_ATK_EXTERN', '__declspec(dllexport) extern')
-            if cc.get_id() != 'msvc'
-              test_cflags += ['-fvisibility=hidden']
-            endif
-          else
-            cairomm_conf.set('_ATK_EXTERN', '__attribute__((visibility("default"))) extern')
-            test_cflags += ['-fvisibility=hidden']
-          endif
-        endif
-
-        # Check all compiler flags
-        foreach cflag: test_cflags
-          if cc.has_argument(cflag)
-            common_cflags += [ cflag ]
-          endif
-        endforeach
-
-        # Linker flags
-        if host_machine.system() == 'linux'
-          foreach ldflag: [ '-Wl,-Bsymbolic', '-Wl,-z,relro', '-Wl,-z,now', ]
-            if cc.has_argument(ldflag)
-              common_ldflags += [ ldflag ]
-            endif
-          endforeach
-        endif
-
-        # Maintain compatibility with autotools on macOS
-        if host_machine.system() == 'darwin'
-          common_ldflags += [ '-compatibility_version=1', '-current_version=1.0', ]
-        endif
-
-        # Functions
-        checked_funcs = [
-          'bind_textdomain_codeset',
-        ]
-
-        foreach f: checked_funcs
-          if cc.has_function(f)
-            cairomm_conf.set('HAVE_' + f.underscorify().to_upper(), 1)
-          endif
-        endforeach
-endif
-
 # Dependencies
-## gobject_req_version = '>= 2.31.2'
-## gobject_dep = dependency('gobject-2.0', version: gobject_req_version)
-
 sigc_req_version = '>= 2.10.0'
 sigc_dep = dependency('sigc++', version: sigc_req_version)
 
 cairo_req_version = '>= 1.12.0'
 cairo_dep = dependency('cairo', version: cairo_req_version)
-
 
 # Compat variables for pkgconfig
 pkgconf = configuration_data()

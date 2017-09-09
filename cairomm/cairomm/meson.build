@@ -60,30 +60,6 @@ cairomm_version_conf.set('CAIROMM_MICRO_VERSION', cairomm_micro_version)
 cairomm_version_conf.set('CAIROMM_BINARY_AGE', cairomm_binary_age)
 cairomm_version_conf.set('CAIROMM_INTERFACE_AGE', cairomm_interface_age)
 
-if false
-configure_file(input: 'atkversion.h.in',
-               output: 'atkversion.h',
-               configuration: cairomm_version_conf,
-               install: true,
-               install_dir: join_paths(cairomm_includedir, cairomm_api_path))
-# Marshallers
-cairomm_marshals = gnome.genmarshal('atkmarshal',
-                                sources: 'atkmarshal.list',
-                                prefix: 'cairomm_marshal')
-cairomm_marshal_h = cairomm_marshals[1]
-endif
-
-if false
-# Enumerations for GType
-cairomm_enums = gnome.mkenums('atk-enum-types',
-                          sources: cairomm_headers,
-                          c_template: 'atk-enum-types.c.template',
-                          h_template: 'atk-enum-types.h.template',
-                          install_dir: join_paths(cairomm_includedir, cairomm_api_path),
-                          install_header: true)
-cairomm_enum_h = cairomm_enums[1]
-endif
-
 cairomm_cflags = [
   '/D CAIROMM_BUILD',
   '/D _WINDLL',
@@ -95,7 +71,6 @@ cairomm_ldflags = [ '/_MK_DEF:' + def_file, ]
 
 # Our link command that create the def files
 my_link = find_program('link_gendef.exe')
-message('Linker ' + my_link.path())
 # We copy this in the build dir
 cpy = find_program('link_gendef-cpy.py')
 run_command(cpy, my_link.path(), meson.build_root())
@@ -104,7 +79,6 @@ cairomm_inc = include_directories('.')
 system_inc = include_directories( join_paths(cairomm_includedir, 'glib-2.0') )
 win = import('windows')
 
-message('Cur build:' + meson.current_build_dir())
 libcairomm = shared_library('cairomm-@0@'.format(cairomm_api_version),
                         win.compile_resources('cairomm.rc'),
                         sources: cairomm_sources,
