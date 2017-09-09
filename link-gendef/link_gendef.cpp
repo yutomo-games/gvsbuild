@@ -1,13 +1,58 @@
+/*
+ *  MICO --- an Open Source CORBA implementation
+ *  Copyright (c) 2003 Harald Böhme
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *
+ *  For more information, visit the MICO Home Page at
+ *  http://www.mico.org/
+ */
 
+/* Modified by Cedric Gustin <cedric.gustin@gmail.com> on 2006/01/13 :
+ * Redirect the output of dumpbin to dumpbin.out instead of reading the
+ * output stream of popen, as it fails with Visual Studio 2005 in
+ * pre-link build events.
+ */
 
+/* Modifief by Daniele Forghieri on 2017/09/09:
+ *
+ * Make a wrapper for the msvc link.exe command.
+ *
+ * This program scan the link command used, get the dll name, the def
+ * file name and all the objects used and create the updated def file
+ * using the utility dumpbin.
+ *
+ * After this the original link command (searched in the path) is called
+ * changing the /_MK_DEF:file option to /DEF:file
+ *
+ * The net result is that all the definitions presents in the various
+ * object file are exported and there is no need to declare them as
+ * __declspec(dllexport), emulating gcc and the cmake's
+ * WINDOWS_EXPORT_ALL_SYMBOLS
+ */
+
+// disable some CRT warnings
 #define _CRT_SECURE_NO_WARNINGS
 
+// include
 #include "stdio.h"
-#include "stdlib.h"
-#include "string.h"
+//#include "stdlib.h"
+//#include "string.h"
 #include "process.h"
-#include "sys\stat.h"
 #include "io.h"
+#include "sys\stat.h"
 
 #include <string>
 #include <iostream>
@@ -15,9 +60,12 @@
 
 using namespace std;
 
+// old c '\0' terminated string
 typedef char *  C_String;
-int verbose = 2;
+// verbose level, 0 = off, max = 2
+int verbose = 1;
 
+// look for the original link.exe command on the path
 string find_link(void)
 {
     C_String      cpath;
@@ -62,50 +110,8 @@ string find_link(void)
 
 }
 
-class parse_args {
-public:
-    FILE        *m_fresp;
-    C_String    m_resp_name;
-    string      m_dllname;
-    string      m_deffile;
-    bool        m_mkdef;
-    string      m_dumpbin;
-
-    parse_args();
-    ~parse_args();
-
-    void close_resp(void);
-    void add_arg(C_String arg, bool quote = false);
-    int make_def(void);
-    int do_link(string link_cmd);
-
-};
-
-parse_args::parse_args(void)
-{
-
-    m_resp_name = "xlink_cmd.rsp";
-    m_fresp = fopen(m_resp_name, "wt");
-    m_dllname = "dll_name";
-    m_deffile = "_file.def";
-    m_mkdef = false;
-    m_dumpbin = "dumpbin /SYMBOLS /OUT:dumpbin.out";
-
-}
-
-parse_args::~parse_args()
-{
-    close_resp();
-}
-
-void parse_args::close_resp(void)
-{
-    if (m_fresp != nullptr) {
-        fclose(m_fresp);
-        m_fresp = nullptr;
-    }
-}
-
+// look for the beginning of the string. If it's ok return the string after
+// the beginning, generally a file name
 string startsWith(C_String str, C_String part)
 {
     unsigned int    l;
@@ -123,6 +129,7 @@ string startsWith(C_String str, C_String part)
     }
 }
 
+// look for the end of the string, return true/false
 bool endsWith(C_String str, C_String part)
 {
     unsigned int    lp;
@@ -137,6 +144,58 @@ bool endsWith(C_String str, C_String part)
     return (_stricmp(str + ls - lp, part) == 0 ? true : false);
 }
 
+// class to parse the link arguments
+class parse_args {
+    private:
+        FILE        *m_fresp;
+        C_String    m_resp_name;
+        string      m_dllname;
+        string      m_deffile;
+        bool        m_mkdef;
+        string      m_dumpbin;
+        string      m_link_cmd;
+
+        void close_resp(void);
+        int make_def(void);
+        int do_link(void);
+
+    public:
+        parse_args(string link_cmd);
+        ~parse_args();
+
+        void add_arg(C_String arg, bool quote = false);
+        int execute(void);
+
+};
+
+parse_args::parse_args(string link_cmd)
+{
+    m_link_cmd = link_cmd;
+    // init all
+    m_resp_name = "xlink_cmd.rsp";
+    m_fresp = fopen(m_resp_name, "wt");
+    m_dllname = "dll_name";
+    m_deffile = "_file.def";
+    m_mkdef = false;
+    m_dumpbin = "dumpbin /SYMBOLS /OUT:dumpbin.out";
+
+}
+
+parse_args::~parse_args()
+{
+    close_resp();
+}
+
+// close our response file
+void parse_args::close_resp(void)
+{
+    if (m_fresp != nullptr) {
+        fclose(m_fresp);
+        m_fresp = nullptr;
+    }
+}
+
+// add and check one single arg
 void parse_args::add_arg(C_String ca, bool quote)
 {
 
@@ -146,6 +205,7 @@ void parse_args::add_arg(C_String ca, bool quote)
     add = ca;
     part = startsWith(ca, "/OUT:");
     if (part != "") {
+        // dll/exe name
         size_t  cp;
 
         cp = part.rfind('\\');
@@ -166,6 +226,7 @@ void parse_args::add_arg(C_String ca, bool quote)
 
     part = startsWith(ca, "/_MK_DEF:");
     if (part != "") {
+        // our command to generate / use the .DEF file
         m_deffile = part;
         m_mkdef = true;
         add = "/DEF:" + part;
@@ -176,7 +237,7 @@ void parse_args::add_arg(C_String ca, bool quote)
     }
 
     if (endsWith(ca, ".obj")) {
-        // Obj ...
+        // Obj for creating the .DEF file
         m_dumpbin += " ";
         m_dumpbin += ca;
         if (verbose > 1) {
@@ -184,6 +245,7 @@ void parse_args::add_arg(C_String ca, bool quote)
         }
     }
 
+    // build the original link response file
     if (quote) {
         fprintf(m_fresp, "\"%s\"\n", add.c_str());
     }
@@ -192,6 +254,7 @@ void parse_args::add_arg(C_String ca, bool quote)
     }
 }
 
+// create the .DEF file, if needed
 int parse_args::make_def(void)
 {
     if (!m_mkdef) {
@@ -248,7 +311,8 @@ int parse_args::make_def(void)
     return(0);
 }
 
-int parse_args::do_link(string link_cmd)
+// execute the original link command, eventually with the args changed
+int parse_args::do_link()
 {
 
     string  arg1;
@@ -256,8 +320,20 @@ int parse_args::do_link(string link_cmd)
     close_resp();
     arg1 = "@";
     arg1 += m_resp_name;
-    return(_spawnl(_P_WAIT, link_cmd.c_str(), link_cmd.c_str(), arg1.c_str(), NULL));
+    return(_spawnl(_P_WAIT, m_link_cmd.c_str(), m_link_cmd.c_str(), arg1.c_str(), NULL));
 
+}
+
+// finalize the parsing, executing everything
+int parse_args::execute(void)
+{
+    int     rt;
+
+    rt = make_def();
+    if (rt == 0) {
+        rt = do_link();
+    }
+    return(rt);
 }
 
 int main(int argc, C_String argv[])
@@ -265,6 +341,7 @@ int main(int argc, C_String argv[])
     string      link_cmd;
     int         i;
 
+    // look for the linker
     link_cmd = find_link();
     if (link_cmd == "") {
         cerr << "Link command not found!" << endl;
@@ -275,7 +352,8 @@ int main(int argc, C_String argv[])
         cout << "Link found at " << link_cmd << endl;
     }
 
-    parse_args  pa;
+    // costruct the response file
+    parse_args  pa(link_cmd);
 
     for(i = 1; i < argc; i++) {
         C_String  ca;
@@ -346,13 +424,11 @@ int main(int argc, C_String argv[])
             }
         }
         else {
-            // argomento singolo
+            // single argument
             pa.add_arg(ca);
         }
 
     }
-    pa.make_def();
-    pa.do_link(link_cmd);
+    pa.execute();
     return 0;
 }
-
