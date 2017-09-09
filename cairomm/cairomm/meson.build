@@ -88,11 +88,17 @@ cairomm_cflags = [
   '/D CAIROMM_BUILD',
   '/D _WINDLL',
   '/D _MBCS',
-  '/FImsvc_recommended_pragmas.h',
 ]
 
-def_file = join_paths(meson.current_build_dir(), 'cairomm.def')
-cairomm_ldflags = [ '/DEF:' + def_file, ]
+def_file = meson.project_name() + '.def'
+cairomm_ldflags = [ '/_MK_DEF:' + def_file, ]
+
+# Our link command that create the def files
+my_link = find_program('link_gendef.exe')
+message('Linker ' + my_link.path())
+# We copy this in the build dir
+cpy = find_program('link_gendef-cpy.py')
+run_command(cpy, my_link.path(), meson.build_root())
 
 cairomm_inc = include_directories('.')
 system_inc = include_directories( join_paths(cairomm_includedir, 'glib-2.0') )
@@ -104,32 +110,18 @@ libcairomm = shared_library('cairomm-@0@'.format(cairomm_api_version),
                         sources: cairomm_sources,
                         version: cairomm_libversion,
                         install: true,
-                        link_depends : [ 'cairomm.def', ],
-                        dependencies: [ cairo_dep,
-                                        sigc_dep,
+                        dependencies: [
+                            cairo_dep,
+                            sigc_dep,
                         ],
                         include_directories: [ root_inc, cairomm_inc, system_inc, ],
                         cpp_args: common_cflags + cairomm_cflags,
                         link_args: common_ldflags + cairomm_ldflags)
 
-# build the object list for generating the def files
-obj = []
-foreach s: cairomm_sources
-    ta = join_paths('cairomm-1.0@sha', s + '.obj')
-    message(ta)
-    obj += join_paths(ta)
-endforeach
-gdef = custom_target('auto_def',
-                     input : obj,
-                     output : 'cairomm.def',
-                     command : [ join_paths(cairomm_prefix, 'bin', 'gendef.exe'), '@OUTPUT@', 'cairomm-1.0-1.dll', '@INPUT@', ],
-##                     build_always : true,
-)
-##def_dep = declare_dependency(sources : def_file)
-
 libcairomm_dep = declare_dependency(link_with: libcairomm,
                                     include_directories: cairomm_inc,
-                                    dependencies: [ cairo_dep,
-                                                sigc_dep,
+                                    dependencies: [
+                                        cairo_dep,
+                                        sigc_dep,
                                     ],
                                 )

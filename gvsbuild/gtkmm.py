@@ -70,8 +70,10 @@ class Project_cairomm(Tarball, Meson):
             hash = '4cd9fd959538953dfa606aaa7a31381e3193eebf14d814d97ef928684ee9feb5',
             dependencies = [
                 'meson',
-                'ninja', 
+                'ninja',
+                'pkg-config', 
                 'libsig++', 
+                'link-gendef',
                 'cairo', 
                 ],
             patches = [

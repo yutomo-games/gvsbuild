@@ -8,7 +8,7 @@ project('cairomm', 'cpp',
         ],
         meson_version : '>= 0.40.1')
 
-##cc = meson.get_compiler('c')
+cc = meson.get_compiler('cpp')
 ##host_system = host_machine.system()
 
 version = meson.project_version().split('.')
@@ -46,8 +46,44 @@ cairomm_libversion = '@0@.@1@.@2@'.format(cairomm_soversion, (cairomm_binary_age
 ##add_project_arguments([ '-DG_DISABLE_SINGLE_INCLUDES', '-DATK_DISABLE_SINGLE_INCLUDES' ], language: 'cpp')
 
 # Compiler and linker flags
-common_cflags = []
 common_ldflags = []
+
+# Compiler flags
+if cc.get_id() == 'msvc'
+  # Make MSVC more pedantic, this is a recommended pragma list
+  # from _Win32_Programming_ by Rector and Newcomer.  Taken from
+  # glib's msvc_recommended_pragmas.h--please see that file for
+  # the meaning of the warning codes used here
+  test_cflags = [
+    '-we4002', # too many actual parameters for macro
+    '-we4003', # not enough actual parameters for macro
+    '-w14010', # single-line comment contains line-continuation character
+    '-we4013', # 'function' undefined; assuming extern returning int
+    '-w14016', # no function return type; using int as default
+    '-we4020', # too many actual parameters
+    '-we4021', # too few actual parameters
+    '-we4027', # function declared without formal parameter list
+    '-we4029', # declared formal parameter list different from definition
+    '-we4033', # 'function' must return a value
+    '-we4035', # 'function' : no return value
+    '-we4045', # array bounds overflow
+    '-we4047', # different levels of indirection
+    '-we4049', # terminating line number emission
+    '-we4053', # an expression of type void was used as an operand
+    '-we4071', # no function prototype given
+    '-we4819', # the file contains a character that cannot be represented in the current code page
+  ]
+else
+  test_cflags = []
+endif
+
+common_cflags = []
+foreach cflag: test_cflags
+  if cc.has_argument(cflag)
+    common_cflags += [ cflag ]
+  endif
+endforeach
+
 
 test_cflags = []
 
