@@ -21,12 +21,10 @@ Default projects for gtkmm stack
 """
 
 from .utils.base_expanders import Tarball
-from .utils.base_expanders import GitRepo
 from .utils.base_expanders import NullExpander
 from .utils.base_project import Project
 from .utils.base_project import project_add
 from .utils.base_builders import Meson
-from .utils.base_builders import MercurialCmakeProject
 
 @project_add
 class Project_libsigplusplus(Tarball, Meson):
@@ -38,8 +36,8 @@ class Project_libsigplusplus(Tarball, Meson):
             dependencies = [
                 'meson',
                 'ninja', 
-                ]
-            )
+            ]
+        )
 
     def build(self):
         Meson.build(self)
@@ -75,25 +73,11 @@ class Project_cairomm(Tarball, Meson):
                 'libsig++', 
                 'link-gendef',
                 'cairo', 
-                ],
+            ],
             patches = [
                 '001-define-mpi-msvc.patch',
-                ],
-            )
-
-@project_add
-class Project_atkmm(Tarball, Meson):
-    def __init__(self):
-        Project.__init__(self,
-            'atkmm',
-            archive_url = 'https://download.gnome.org/sources/atkmm/2.24/atkmm-2.24.2.tar.xz',
-            hash = 'ff95385759e2af23828d4056356f25376cfabc41e690ac1df055371537e458bd',
-            dependencies = [ 
-                'libsig++', 
-                'atk', 
-                'glibmm', 
-                ],
-            )
+            ],
+        )
 
 @project_add
 class Project_pangomm(Tarball, Meson):
@@ -106,8 +90,8 @@ class Project_pangomm(Tarball, Meson):
                 'libsig++', 
                 'pango', 
                 'cairomm', 
-                ],
-            )
+            ],
+        )
 
 @project_add
 class Project_glibmm(Tarball, Meson):
@@ -118,8 +102,23 @@ class Project_glibmm(Tarball, Meson):
             hash = '81b8abf21c645868c06779abc5f34efc1a51d5e61589dab2a2ed67faa8d4811e',
             dependencies = [ 
                 'libsig++', 
-                'glib', ],
-            )
+                'glib', 
+            ],
+        )
+
+@project_add
+class Project_atkmm(Tarball, Meson):
+    def __init__(self):
+        Project.__init__(self,
+            'atkmm',
+            archive_url = 'https://download.gnome.org/sources/atkmm/2.24/atkmm-2.24.2.tar.xz',
+            hash = 'ff95385759e2af23828d4056356f25376cfabc41e690ac1df055371537e458bd',
+            dependencies = [ 
+                'libsig++', 
+                'atk', 
+                'glibmm', 
+            ],
+        )
 
 @project_add
 class Project_gtkmm(Tarball, Meson):
@@ -133,5 +132,5 @@ class Project_gtkmm(Tarball, Meson):
                 'gtk', 
                 'atkmm', 
                 'pangomm', 
-                ],
-            )
+            ],
+        )
