@@ -119,6 +119,20 @@ def extract_exec(src, dest_dir, dir_part=None, strip_one=False, check_file=None,
     # Say that we have done the extraction
     return True
 
+class NullExpander(object):
+    """
+    Null expander to use when all the source are present in the script and 
+    nothing must be downloaded
+    
+    """
+    def update_build_dir(self):
+        # Force the copy of the files in the script
+        return True
+
+    def unpack(self):
+        # Everything is in our script, nothing to download
+        pass
+    
 class Tarball(object):
     def update_build_dir(self):
         rt = extract_exec(self.archive_file, self.build_dir, strip_one=not self.tarbomb, check_mark=True)
