@@ -22,6 +22,7 @@ Default projects for gtkmm stack
 
 from .utils.base_expanders import Tarball
 from .utils.base_expanders import GitRepo
+from .utils.base_expanders import NullExpander
 from .utils.base_project import Project
 from .utils.base_project import project_add
 from .utils.base_builders import Meson
@@ -44,6 +45,21 @@ class Project_libsigplusplus(Tarball, Meson):
         Meson.build(self)
 ##?        self.install(r'.\COPYING share\doc\wing')
 
+
+@project_add
+class Project_link_gendef(NullExpander, Meson):
+    def __init__(self):
+        Project.__init__(self,
+            'link-gendef',
+            dependencies = [
+                'meson',
+                'ninja', 
+            ]
+        )
+
+    def build(self):
+        Meson.build(self)
+        self.install(r'.\COPYING share\doc\link-gendef')
 
 @project_add
 class Project_cairomm(Tarball, Meson):
