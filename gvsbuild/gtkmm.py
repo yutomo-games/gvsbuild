@@ -72,24 +72,11 @@ class Project_cairomm(Tarball, Meson):
                 'pkg-config', 
                 'libsig++', 
                 'link-gendef',
+
                 'cairo', 
             ],
             patches = [
                 '001-define-mpi-msvc.patch',
-            ],
-        )
-
-@project_add
-class Project_pangomm(Tarball, Meson):
-    def __init__(self):
-        Project.__init__(self,
-            'pangomm',
-            archive_url = 'https://download.gnome.org/sources/pangomm/2.40/pangomm-2.40.1.tar.xz',
-            hash = '9762ee2a2d5781be6797448d4dd2383ce14907159b30bc12bf6b08e7227be3af',
-            dependencies = [ 
-                'libsig++', 
-                'pango', 
-                'cairomm', 
             ],
         )
 
@@ -101,8 +88,34 @@ class Project_glibmm(Tarball, Meson):
             archive_url = 'https://download.gnome.org/sources/glibmm/2.52/glibmm-2.52.0.tar.xz',
             hash = '81b8abf21c645868c06779abc5f34efc1a51d5e61589dab2a2ed67faa8d4811e',
             dependencies = [ 
+                'meson',
+                'ninja',
+                'pkg-config', 
                 'libsig++', 
+                'link-gendef',
+
                 'glib', 
+            ],
+        )
+
+@project_add
+class Project_pangomm(Tarball, Meson):
+    def __init__(self):
+        Project.__init__(self,
+            'pangomm',
+            archive_url = 'https://download.gnome.org/sources/pangomm/2.40/pangomm-2.40.1.tar.xz',
+            hash = '9762ee2a2d5781be6797448d4dd2383ce14907159b30bc12bf6b08e7227be3af',
+            dependencies = [ 
+                'meson',
+                'ninja',
+                'pkg-config', 
+                'libsig++', 
+                'link-gendef',
+
+                'pango', 
+
+                'cairomm',
+                'glibmm', 
             ],
         )
 
@@ -114,8 +127,14 @@ class Project_atkmm(Tarball, Meson):
             archive_url = 'https://download.gnome.org/sources/atkmm/2.24/atkmm-2.24.2.tar.xz',
             hash = 'ff95385759e2af23828d4056356f25376cfabc41e690ac1df055371537e458bd',
             dependencies = [ 
+                'meson',
+                'ninja',
+                'pkg-config', 
                 'libsig++', 
+                'link-gendef',
+
                 'atk', 
+
                 'glibmm', 
             ],
         )
@@ -128,8 +147,14 @@ class Project_gtkmm(Tarball, Meson):
             archive_url = 'https://download.gnome.org/sources/gtkmm/3.22/gtkmm-3.22.1.tar.xz',
             hash = '6a0c2cc0894a69b666e688e5e6e93621d7625db5e77fd37551310d75c00896b0',
             dependencies = [ 
+                'meson',
+                'ninja',
+                'pkg-config', 
                 'libsig++', 
+                'link-gendef',
+
                 'gtk', 
+                
                 'atkmm', 
                 'pangomm', 
             ],

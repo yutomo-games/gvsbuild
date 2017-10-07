@@ -31,9 +31,18 @@ def print_log(msg):
     if global_verbose:
         print(msg)
 
-def print_debug(msg):
+def print_debug(msg, split_str=None):
     if global_debug:
-        print("Debug:", msg)
+        if split_str:
+            ln = msg.split(split_str)
+            if len(ln) > 1:
+                print("Debug:")
+                for i in ln:
+                    print("    %s" % (i, ))
+            else:
+                print("Debug:", msg)
+        else:
+            print("Debug:", msg)
 
 def error_exit(msg):
     print("Error:", msg, file=sys.stderr)
