@@ -1,0 +1,11 @@
+# Get auto
+prefix=@prefix@
+exec_prefix=${prefix}
+libdir=${prefix}/lib
+includedir=${prefix}/include/zmq
+
+Name: libzmq
+Description: 0MQ c++ library
+Version: 4.2.2
+Libs: -L${libdir} -llibzmq
+Cflags: -I${includedir}

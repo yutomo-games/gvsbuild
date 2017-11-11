@@ -1415,3 +1415,36 @@ class Project_check_libs(Meson):
         Meson.build(self, make_tests=True)
         self.install(r'.\COPYING share\doc\check-libs')
 
+@project_add
+class Project_zeromq(Tarball, Project):
+    def __init__(self):
+        Project.__init__(self,
+            'zeromq',
+            archive_url = 'https://github.com/zeromq/libzmq/releases/download/v4.2.2/zeromq-4.2.2.tar.gz',
+            hash = '5b23f4ca9ef545d5bd3af55d305765e3ee06b986263b31967435d285a3e6df6b',
+#            dependencies = [''],
+            )
+
+    def build(self):
+        if self.builder.opts.configuration == 'debug':
+            configuration = 'DynDebug' 
+        else:
+            configuration = 'DynRelease'
+
+        cmd = r'msbuild libzmq.sln /p:configuration=%s /p:platform=%s /target:libzmq' % (configuration, self.builder.opts.platform, )
+        self.push_location(r'.\builds\msvc\vs2017')
+        self.exec_vs(cmd)
+        self.pop_location()
+
+
+        self.install(r'.\pc-files\* lib\pkgconfig')
+        self.install(r'.\bin\libzmq.dll bin')
+        self.install(r'.\bin\libzmq.pdb bin')
+
+        self.install(r'.\bin\libzmq.lib lib')
+
+        self.install(r'.\include\zmq.h include\zmq')
+        self.install(r'.\include\zmq_utils.h include\zmq')
+
+        self.install(r'.\COPYING.LESSER share\doc\zeromq')
+
