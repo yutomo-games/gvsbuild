@@ -1,6 +1,6 @@
 /*
  *  MICO --- an Open Source CORBA implementation
- *  Copyright (c) 2003 Harald Böhme
+ *  Copyright (c) 2003 Harald BÃ¶hme
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -96,7 +96,7 @@ string find_link(void)
         }
         full = tested + "\\link.exe";
         if (stat(full.c_str(), &s_buffer) == 0) {
-            // Esiste :)
+            // Exists :)
             rt = full;
             if (verbose > 1) {
                 cout << "Found!" << endl;
@@ -352,7 +352,7 @@ int main(int argc, C_String argv[])
         cout << "Link found at " << link_cmd << endl;
     }
 
-    // costruct the response file
+    // construct the response file
     parse_args  pa(link_cmd);
 
     for(i = 1; i < argc; i++) {
