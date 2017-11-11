@@ -1448,3 +1448,37 @@ class Project_zeromq(Tarball, Project):
 
         self.install(r'.\COPYING.LESSER share\doc\zeromq')
 
+@project_add
+class Project_libsodium(Tarball, Project):
+    def __init__(self):
+        Project.__init__(self,
+            'libsodium',
+            archive_url = 'https://github.com/jedisct1/libsodium/releases/download/1.0.15/libsodium-1.0.15.tar.gz',
+            hash = 'fb6a9e879a2f674592e4328c5d9f79f082405ee4bb05cb6e679b90afe9e178f4',
+#            dependencies = [''],
+            )
+
+    def build(self):
+        if self.builder.opts.configuration == 'debug':
+            configuration = 'DynDebug' 
+        else:
+            configuration = 'DynRelease'
+
+        cmd = r'msbuild libsodium.sln /p:configuration=%s /p:platform=%s' % (configuration, self.builder.opts.platform, )
+        self.push_location(r'.\builds\msvc\vs2017')
+        self.exec_vs(cmd)
+        self.pop_location()
+ 
+ 
+        self.install(r'.\pc-files\* lib\pkgconfig')
+        self.install(r'.\bin\*.dll bin')
+        self.install(r'.\bin\*.pdb bin')
+ 
+        self.install(r'.\bin\*.lib lib')
+ 
+        self.install(r'.\src\libsodium\include\sodium.h include')
+        self.install(r'.\src\libsodium\include\sodium\*.h include\sodium')
+ 
+        self.install(r'.\LICENSE share\doc\libsodium')
+
+

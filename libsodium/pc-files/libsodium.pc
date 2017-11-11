@@ -1,0 +1,12 @@
+# Get auto
+prefix=c:\some\dir\just\to\have\one
+exec_prefix=${prefix}
+libdir=${prefix}/lib
+includedir=${prefix}/include
+
+Name: libsodium
+Version: 1.0.15
+Description: A modern and easy-to-use crypto library
+
+Libs: -L${libdir} -llibsodium
+Cflags: -I${includedir}
