@@ -187,6 +187,12 @@ class GitRepo(object):
         self.builder.exec_msys('git clone %s %s' % (self.repo_url, tmp_dir, ))
         # create a .zip file with the downloaded project
         all_files = dirlist2set(tmp_dir, add_dirs=True)
+        # Keep one (old) copy, this should be one we built succesfully
+        old_file = os.path.join(git_tmp_dir, self.name + '-old.zip')
+        new_file = os.path.join(git_tmp_dir, self.name + '.zip')
+        if os.path.exists(old_file):
+            os.remove(old_file)
+        os.rename(new_file, old_file)
         make_zip(os.path.join(git_tmp_dir, self.name), all_files, len(tmp_dir))
 
         shutil.move(tmp_dir, self.build_dir)
