@@ -22,12 +22,45 @@ Command line parser
 import argparse
 import os
 import sys
+import importlib
+import pathlib
 
 from .base_project import Project, GVSBUILD_PROJECT, GVSBUILD_TOOL, GVSBUILD_GROUP, GVSBUILD_IGNORE
 from .base_project import Options
 from .builder import Builder
 from .utils import ordered_set
 from .simple_ui import log
+
+def load_user_scripts(dirs):
+    log.start('Loading user scripts')
+    dir_list = dirs.split(',')
+    for d in dir_list:
+        if not pathlib.PurePath(d).is_absolute():
+            # Build from the script dir
+            script_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
+            d = os.path.join(script_dir, d)
+            log.debug("Creating full path for import: '%s'" % (d, ))
+        else:
+            log.debug("Using full path for import: '%s'" % (d, ))
+
+        # sv_sys_path = [ t for t in sys.path ]
+        try:
+            files = os.listdir(d)
+        except Exception as e:
+            log.message("Error reading from dir '%s' (%s)" % (d, e, ))
+            raise
+
+        scripts = [ t[:-3] for t in files if t.endswith('.py') ]
+        if scripts:
+            log.message("Importing from '%s'" % (d, ))
+            sys.path.insert(0, d)
+            for s in scripts:
+                log.message("  Importing '%s'" % (s, ))
+                importlib.import_module(s)
+            sys.path.remove(d)
+        else:
+            log.debug("No scripts (.py) found!")
+    log.end()
 
 def get_options(args):
     opts = Options()
@@ -66,6 +99,7 @@ def get_options(args):
     opts.log_size = args.log_size
     opts.log_single = args.log_single
     opts.ninja_opts = args.ninja_opts
+    opts.user_scripts = args.user_scripts
 
     # active the log
     log.configure(os.path.join(opts.build_dir, 'logs'), opts)
@@ -93,6 +127,9 @@ def get_options(args):
             opts._vs_path_auto = True
         else:
             opts.vs_install_path = r'C:\Program Files (x86)\Microsoft Visual Studio %s.0' % (opts.vs_ver,)
+
+    if opts.user_scripts:
+        load_user_scripts(opts.user_scripts)
 
     opts.projects = args.project
     Project.opts = opts
@@ -288,6 +325,9 @@ Examples:
                          help="Always start a new log file, with date & time")
     p_build.add_argument('--ninja-opts', default='',
                          help='Command line options to pass to ninja, e.g. to limit the use (-j 2) or for debug purpouse.')
+
+    p_build.add_argument('--user-scripts', default='',
+                         help='A comma separated list of directories to look for .py script to add to the build system.')
 
     p_build.add_argument('project', nargs='+',
                          help='Project(s) to build.')
