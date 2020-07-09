@@ -482,8 +482,7 @@ class Project_glib(Tarball, Meson):
             archive_url = 'http://ftp.acc.umu.se/pub/GNOME/sources/glib/2.65/glib-2.65.0.tar.xz',
             hash = 'b041e63cd0ac1fccb486374022ade040d907aad29b278e27d9e43e9294a6e7a3',
             dependencies = ['ninja', 'meson', 'pkg-config', 'gettext', 'libffi', 'zlib'],
-            patches = ['glib-package-installation-directory.patch',
-                       'gwin32-remove-automatic-handling-of-AccessViolation-.patch'],
+            patches = ['glib-package-installation-directory.patch'],
             )
 
     def build(self):
