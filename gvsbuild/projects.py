@@ -1366,6 +1366,28 @@ class Project_libuv(Tarball, CmakeProject):
         self.install(r'.\LICENSE share\doc\libuv')
 
 @project_add
+class Project_libvpx(Tarball, Project):
+    def __init__(self):
+        Project.__init__(self,
+            'libvpx',
+            archive_url = 'https://github.com/webmproject/libvpx/archive/v1.9.0.tar.gz',
+            hash = 'd279c10e4b9316bf11a570ba16c3d55791e1ad6faa4404c67422eb631782c80a',
+            dependencies = ['nasm', 'msys2', 'libyuv'],
+            )
+
+    def build(self):
+        option = ''
+        if self.builder.opts.configuration == 'debug':
+            option = '--enable-debug_libs'
+
+        add_path = os.path.join(self.builder.opts.msys_dir, 'usr', 'bin')
+        self.exec_vs(r'./configure --enable-shared --prefix=%(gtk_dir)s' + option, add_path=add_path)
+        self.exec_vs(r'make', add_path=add_path)
+        self.exec_vs(r'make install', add_path=add_path)
+
+        self.install(r'.\LICENSE share\doc\libvpx')
+
+@project_add
 class Project_libxml2(Tarball, Meson):
     def __init__(self):
         Project.__init__(self,
