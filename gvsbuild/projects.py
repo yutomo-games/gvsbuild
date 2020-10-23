@@ -1372,18 +1372,24 @@ class Project_libvpx(Tarball, Project):
             'libvpx',
             archive_url = 'https://github.com/webmproject/libvpx/archive/v1.9.0.tar.gz',
             hash = 'd279c10e4b9316bf11a570ba16c3d55791e1ad6faa4404c67422eb631782c80a',
-            dependencies = ['nasm', 'msys2', 'libyuv'],
+            dependencies = ['yasm', 'msys2', 'libyuv', 'perl'],
             )
-
     def build(self):
-        option = ''
+        configure_options = "--enable-pic --as=yasm --disable-unit-tests --size-limit=16384x16384 " \
+                            "--enable-postproc --enable-multi-res-encoding --enable-temporal-denoising " \
+                            "--enable-vp9-temporal-denoising --enable-vp9-postproc --disable-tools " \
+                            "--disable-examples --disable-docs "
         if self.builder.opts.configuration == 'debug':
-            option = '--enable-debug_libs'
+            configure_options += '--enable-debug_libs'
 
-        add_path = os.path.join(self.builder.opts.msys_dir, 'usr', 'bin')
-        self.exec_vs(r'./configure --enable-shared --prefix=%(gtk_dir)s' + option, add_path=add_path)
-        self.exec_vs(r'make', add_path=add_path)
-        self.exec_vs(r'make install', add_path=add_path)
+        msys_path = Project.get_tool_path('msys2')
+
+        self.push_location(self.pkg_dir)
+        self.exec_vs(r'%s\bash ../libvpx/configure --target=x86_64-win64-vs15 --prefix=%s %s' % (msys_path, convert_to_msys(self.builder.gtk_dir), configure_options),
+                     add_path=msys_path)
+        self.exec_vs(r'make', add_path=msys_path)
+        self.exec_vs(r'make install', add_path=msys_path)
+        self.pop_location()
 
         self.install(r'.\LICENSE share\doc\libvpx')
 
