@@ -1382,10 +1382,17 @@ class Project_libvpx(Tarball, Project):
         if self.builder.opts.configuration == 'debug':
             configure_options += '--enable-debug_libs'
 
+        if self.builder.x86:
+            target = 'x86-win32-'
+        else:
+            target = 'x86_64-win64-'
+
+        target += self.builder.opts.vs_ver
+
         msys_path = Project.get_tool_path('msys2')
 
         self.push_location(self.pkg_dir)
-        self.exec_vs(r'%s\bash ../libvpx/configure --target=x86_64-win64-vs15 --prefix=%s %s' % (msys_path, convert_to_msys(self.builder.gtk_dir), configure_options),
+        self.exec_vs(r'%s\bash ../libvpx/configure --target=%s --prefix=%s %s' % (msys_path, target, convert_to_msys(self.builder.gtk_dir), configure_options),
                      add_path=msys_path)
         self.exec_vs(r'make', add_path=msys_path)
         self.exec_vs(r'make install', add_path=msys_path)
