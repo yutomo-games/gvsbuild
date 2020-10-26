@@ -19,8 +19,8 @@ index 84515ec..0c9d1e3 100644
          tag_content ProjectGuid "{${guid}}"
          tag_content RootNamespace ${name}
          tag_content Keyword ManagedCProj
-+        if [ -n "${WINDOWSSDKVERSION}" ]; then
-+            tag_content WindowsTargetPlatformVersion "${WINDOWSSDKVERSION%\\}"
++        if [ -n "${WindowsSDKVersion}" ]; then
++            tag_content WindowsTargetPlatformVersion "${WindowsSDKVersion%\\}"
 +        fi
          if [ $vs_ver -ge 12 ] && [ "${platforms[0]}" = "ARM" ]; then
              tag_content AppContainerApplication true
