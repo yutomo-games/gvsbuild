@@ -1384,9 +1384,9 @@ class Project_libvpx(Tarball, Project):
             configure_options += '--enable-debug_libs'
 
         if self.builder.x86:
-            target = 'x86-win32-'
+            target = 'x86-win32-vs'
         else:
-            target = 'x86_64-win64-'
+            target = 'x86_64-win64-vs'
 
         target += self.builder.opts.vs_ver
 
