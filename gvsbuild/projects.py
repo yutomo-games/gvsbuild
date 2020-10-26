@@ -1373,7 +1373,7 @@ class Project_libvpx(Tarball, Project):
             archive_url = 'https://github.com/webmproject/libvpx/archive/v1.9.0.tar.gz',
             hash = 'd279c10e4b9316bf11a570ba16c3d55791e1ad6faa4404c67422eb631782c80a',
             dependencies = ['yasm', 'msys2', 'libyuv', 'perl'],
-            patches = ['0001-Make-mandatory-the-win-sdk-10.patch',
+            patches = ['0006-gen_msvs_vcxproj.sh-Select-current-Windows-SDK-if-av.patch',
                        '0001-Always-generate-pc-file.patch'],
             )
     def build(self):
