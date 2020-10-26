@@ -1401,6 +1401,19 @@ class Project_libvpx(Tarball, Project):
 
         self.install(r'.\LICENSE share\doc\libvpx')
 
+    def post_install(self):
+        # LibVPX generates a static library named 'vpxmd.lib' or 'vpxmdd.lib'
+        # in an unusual directory which is not the same as expected by the vpx.pc file
+        if self.builder.opts.configuration == 'debug':
+            lib_name = 'vpxmdd.lib'
+        else:
+            lib_name = 'vpxmd.lib'
+        if self.builder.x86:
+            lib_path = 'Win32/' + lib_name
+        else:
+            lib_path = 'x64/' + lib_name
+        self.builder.exec_msys(['mv', lib_path, './vpx.lib'], working_dir=os.path.join(self.builder.gtk_dir, 'lib'))
+
 @project_add
 class Project_libxml2(Tarball, Meson):
     def __init__(self):
