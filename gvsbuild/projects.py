@@ -1648,6 +1648,7 @@ class Project_openh264(Tarball, Meson):
             dependencies = [
                 'ninja',
                 'meson',
+                'nasm',
             ],
             )
 
