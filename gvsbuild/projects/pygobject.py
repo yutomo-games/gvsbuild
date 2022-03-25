@@ -54,5 +54,4 @@ class PyGObject(Tarball, Project):
             self.install_dir("dist", "python")
         self.install(r".\COPYING share\doc\pygobject")
         self.install(r".\gi\pygobject.h include\pygobject-3.0")
-        self.install_pc_files()
         self.pop_location()

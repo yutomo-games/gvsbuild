@@ -49,5 +49,4 @@ class Pycairo(Tarball, Project):
         self.install(r".\COPYING share\doc\pycairo")
         self.install(r".\COPYING-LGPL-2.1 share\doc\pycairo")
         self.install(r".\COPYING-MPL-1.1 share\doc\pycairo")
-        self.install_pc_files()
         self.pop_location()
